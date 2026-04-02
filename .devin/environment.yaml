@@ -1,0 +1,34 @@
+# https://docs.devin.ai/onboard-devin/environment-yaml
+# Commands run from the repo root.
+# One-time setup (e.g., install system tools, global CLIs).
+initialize: |
+  sudo apt-get update -qq && sudo apt-get install -y -qq maven
+  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+# Install project dependencies (runs every session).
+maintenance: |
+  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  npm install
+  mvn dependency:resolve -Dgpg.skip=true
+# Reference info for agent
+knowledge:
+  - name: project-overview
+    contents: |
+      Java/Maven library for BDD REST API testing with Spring Boot, Cucumber, and Gherkin.
+      This is a library (no main class) — the app runs via the test suite.
+  - name: build
+    contents: |
+      export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      mvn package -Dgpg.skip=true
+  - name: test
+    contents: |
+      export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      mvn test -Dgpg.skip=true
+  - name: lint
+    contents: |
+      No dedicated lint command. Javadoc warnings appear during mvn package.
+  - name: commit-conventions
+    contents: |
+      Uses commitlint with conventional commits (husky hooks).
+      npm install sets up husky commit-msg hook.
+      Commit messages must follow conventional commit format (e.g. feat:, fix:, chore:).
