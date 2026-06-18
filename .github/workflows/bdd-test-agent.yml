@@ -94,6 +94,11 @@ jobs:
           python agent.py --mode commit --commit-sha ${{ github.sha }} --repo-path ..
         continue-on-error: true
 
+      - name: Run Car Parts Salesforce LWC E2E Sample
+        working-directory: jira-selenium-agent
+        run: |
+          python sample-automation/car_parts_runner.py
+
       - name: Run Maven BDD Tests
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 || true
