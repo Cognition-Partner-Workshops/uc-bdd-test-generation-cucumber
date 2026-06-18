@@ -94,6 +94,11 @@ jobs:
           python agent.py --mode commit --commit-sha ${{ github.sha }} --repo-path ..
         continue-on-error: true
 
+      - name: Run Agentic AI Pipeline (Car Parts E2E)
+        working-directory: jira-selenium-agent
+        run: |
+          python agentic_orchestrator.py --mode car-parts --ui-framework salesforce
+
       - name: Run Car Parts Salesforce LWC E2E Sample
         working-directory: jira-selenium-agent
         run: |
