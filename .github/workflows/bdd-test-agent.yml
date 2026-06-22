@@ -106,7 +106,6 @@ jobs:
 
       - name: Run Maven BDD Tests
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           mvn clean test -Dgpg.skip=true
 
       - name: Upload Test Reports
