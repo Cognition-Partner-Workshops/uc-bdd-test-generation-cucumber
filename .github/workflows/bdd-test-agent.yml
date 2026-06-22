@@ -51,7 +51,7 @@ jobs:
         uses: browser-actions/setup-chrome@v1
 
       - name: Run BDD Agent (Demo Mode)
-        if: github.event.inputs.mode == 'demo' || github.event.inputs.mode == ''
+        if: github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'demo' || github.event.inputs.mode == '')
         working-directory: jira-selenium-agent
         run: |
           python agent.py --mode demo --output-dir ../src/test/resources/features/generated
@@ -106,8 +106,8 @@ jobs:
 
       - name: Run Maven BDD Tests
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 || true
-          mvn clean test -Dgpg.skip=true || true
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          mvn clean test -Dgpg.skip=true
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
@@ -133,7 +133,7 @@ jobs:
         run: |
           echo "## BDD Test Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f jira-selenium-agent/test-reports/*.txt ]; then
+          if ls jira-selenium-agent/test-reports/*.txt 1>/dev/null 2>&1; then
             cat jira-selenium-agent/test-reports/*.txt >> $GITHUB_STEP_SUMMARY
           else
             echo "No test report summary found." >> $GITHUB_STEP_SUMMARY
