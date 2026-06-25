@@ -102,7 +102,7 @@ jobs:
       - name: Run Car Parts Salesforce LWC E2E Sample
         working-directory: jira-selenium-agent
         run: |
-          python sample-automation/car_parts_runner.py
+          python runners/car_parts_runner.py
 
       - name: Run Maven BDD Tests
         run: |
@@ -114,7 +114,7 @@ jobs:
         with:
           name: bdd-test-reports
           path: |
-            jira-selenium-agent/test-reports/
+            jira-selenium-agent/reports/
             target/surefire-reports/
             target/cucumber-reports/
           retention-days: 30
@@ -132,8 +132,8 @@ jobs:
         run: |
           echo "## BDD Test Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if ls jira-selenium-agent/test-reports/*.txt 1>/dev/null 2>&1; then
-            cat jira-selenium-agent/test-reports/*.txt >> $GITHUB_STEP_SUMMARY
+          if ls jira-selenium-agent/reports/*.txt 1>/dev/null 2>&1; then
+            cat jira-selenium-agent/reports/*.txt >> $GITHUB_STEP_SUMMARY
           else
             echo "No test report summary found." >> $GITHUB_STEP_SUMMARY
           fi
