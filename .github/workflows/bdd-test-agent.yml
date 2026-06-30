@@ -104,6 +104,11 @@ jobs:
         run: |
           python runners/car_parts_runner.py
 
+      - name: Run Car Parts REST API Tests
+        working-directory: jira-selenium-agent
+        run: |
+          python runners/api_test_runner.py
+
       - name: Run Maven BDD Tests
         run: |
           mvn clean test -Dgpg.skip=true
