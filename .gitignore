@@ -2,3 +2,17 @@ target/
 .idea/
 *.iml
 node_modules/
+
+# Jira-Selenium Agent
+jira-selenium-agent/.env
+jira-selenium-agent/agent.log
+jira-selenium-agent/screenshots/
+jira-selenium-agent/__pycache__/
+jira-selenium-agent/test-reports/
+jira-selenium-agent/sample-automation/
+jira-selenium-agent/react-salesforce-ui/
+jira-selenium-agent/react-config-portal/
+src/test/resources/features/generated/
+src/test/test-data/
+src/test/selenium-configs/
+src/test/feature-archive/

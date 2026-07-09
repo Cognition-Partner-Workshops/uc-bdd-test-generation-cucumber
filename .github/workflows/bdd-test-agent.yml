@@ -1,0 +1,144 @@
+name: BDD Test Agent - Feature Generation & Execution
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Agent mode (demo, jira, commit)'
+        required: true
+        default: 'demo'
+      story_keys:
+        description: 'Comma-separated Jira story keys (optional)'
+        required: false
+      commit_sha:
+        description: 'Commit SHA to process (for commit mode)'
+        required: false
+
+jobs:
+  generate-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [17]
+        python-version: ['3.12']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r jira-selenium-agent/requirements.txt
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run BDD Agent (Demo Mode)
+        if: github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'demo' || github.event.inputs.mode == '')
+        working-directory: jira-selenium-agent
+        run: |
+          python agent.py --mode demo --output-dir ../src/test/resources/features/generated
+
+      - name: Run BDD Agent (Jira Mode)
+        if: github.event.inputs.mode == 'jira'
+        working-directory: jira-selenium-agent
+        env:
+          JIRA_SERVER_URL: ${{ secrets.JIRA_SERVER_URL }}
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: |
+          STORIES_ARG=""
+          if [ -n "${{ github.event.inputs.story_keys }}" ]; then
+            STORIES_ARG="--stories $(echo ${{ github.event.inputs.story_keys }} | tr ',' ' ')"
+          fi
+          python agent.py --mode jira $STORIES_ARG --output-dir ../src/test/resources/features/generated
+
+      - name: Run BDD Agent (Commit Mode)
+        if: github.event.inputs.mode == 'commit'
+        working-directory: jira-selenium-agent
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: |
+          COMMIT_SHA="${{ github.event.inputs.commit_sha }}"
+          if [ -z "$COMMIT_SHA" ]; then
+            COMMIT_SHA="${{ github.sha }}"
+          fi
+          python agent.py --mode commit --commit-sha $COMMIT_SHA --repo-path ..
+
+      - name: Auto-update features on push
+        if: github.event_name == 'push'
+        working-directory: jira-selenium-agent
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: |
+          python agent.py --mode commit --commit-sha ${{ github.sha }} --repo-path ..
+        continue-on-error: true
+
+      - name: Run Agentic AI Pipeline (Car Parts E2E)
+        working-directory: jira-selenium-agent
+        run: |
+          python agentic_orchestrator.py --mode car-parts --ui-framework salesforce
+
+      - name: Run Car Parts Salesforce LWC E2E Sample
+        working-directory: jira-selenium-agent
+        run: |
+          python runners/car_parts_runner.py
+
+      - name: Run Car Parts REST API Tests
+        working-directory: jira-selenium-agent
+        run: |
+          python runners/api_test_runner.py
+
+      - name: Run Maven BDD Tests
+        run: |
+          mvn clean test -Dgpg.skip=true
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bdd-test-reports
+          path: |
+            jira-selenium-agent/reports/
+            target/surefire-reports/
+            target/cucumber-reports/
+          retention-days: 30
+
+      - name: Upload Generated Feature Files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generated-feature-files
+          path: src/test/resources/features/generated/
+          retention-days: 30
+
+      - name: Publish Test Report Summary
+        if: always()
+        run: |
+          echo "## BDD Test Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if ls jira-selenium-agent/reports/*.txt 1>/dev/null 2>&1; then
+            cat jira-selenium-agent/reports/*.txt >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No test report summary found." >> $GITHUB_STEP_SUMMARY
+          fi
